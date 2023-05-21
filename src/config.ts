@@ -1,0 +1,15 @@
+export default () => ({
+  port: parseInt(process.env.PORT, 10) || 3000,
+  Redis_Host: process.env.Redis_Host,
+  Redis_Port: process.env.Redis_Port,
+  Flutterwave_1: process.env.Flutterwave_1,
+  Flutterwave_2: process.env.Flutterwave_2,
+  Mailer_User: process.env.Mailer_User,
+  Mailer_Pass: process.env.Mailer_Pass,
+  JWT_Secret: process.env.JWT_Secret,
+  PG_Username: process.env.PG_Username,
+  PG_Port: process.env.PG_Port,
+  PG_Pass: process.env.PG_Pass,
+  PG_Host: process.env.PG_Host,
+  PG_Name: process.env.PG_Name,
+});

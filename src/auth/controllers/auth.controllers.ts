@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Post,
+  Put,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -32,7 +33,7 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
-  @Post('/refresh/:userid')
+  @Put('/refresh/:userid')
   @UsePipes(new ValidationPipe({ transform: true }))
   refresh(@Body() dto: RefreshDto, @Param('userid') userid: number): any {
     return this.authService.refreshToken(dto, userid);
@@ -53,11 +54,11 @@ export class AuthController {
     return this.authService.sendOtp(dto.email);
   }
 
-  // @Post('reset-password')
-  // async resetPassword(@Body() dto: ResetPasswordDto) {
-  //   const { email, token, password } = dto;
-  //   return this.authService.resetPassword(email, token, password);
-  // }
+  @Put('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    const { email, token, password } = dto;
+    return this.authService.resetPassword(email, token, password);
+  }
 
   // @Post('reset-password')
   // async resetPassword(

@@ -4,11 +4,17 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { UsersModule } from './users/modules/users/users.module';
+import { ExamDetail } from './entities/ExamDetails';
+import { CourseQuestionAnswer } from './entities/CourseQuestionAnswer';
+import { CourseQuestion } from './entities/CourseQuestion';
 import { User } from './entities/User';
 import { Course } from './entities/Course';
-import { Student } from './entities/Students';
+import { StudentPayment } from './entities/Student.payment';
+import { StudentFileUploads } from './entities/students.paths.file';
+import { StudentTraining } from './entities/students.training.info';
+import { StudentContact } from './entities/Student.contact';
+import { Student } from './entities/Student.personal.info';
 import { AuthModule } from './auth/auth.module';
-import { ExamCourse } from './entities/ExamCourse';
 import { EmailModule } from './email/modules/email.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { MailerModule } from '@nestjs-modules/mailer';
@@ -16,19 +22,45 @@ import { APP_FILTER } from '@nestjs/core';
 import { GlobalExceptionFilter } from './exceptions/exceptions';
 // import { Sequelize } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
+// import { UploadGateway } from './upload.gateway';
+import { StudentModule } from './students/student.module';
+import { PaymentModule } from './payments/payment.module';
+import * as Flutterwave from 'flutterwave-node-v3';
+import { QuizModule } from './quiz/quiz.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import configuration from './config';
 
 @Module({
   imports: [
-    SequelizeModule.forRoot({
-      dialect: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'zicky',
-      database: 'nestdb',
-      models: [User, Student, Course, ExamCourse],
-      autoLoadModels: true,
-      synchronize: true,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [configuration],
+    }),
+    SequelizeModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        dialect: 'postgres',
+        host: configService.get('PG_Host'),
+        port: parseInt(configService.get('PG_Port'), 10),
+        username: configService.get('PG_Username'),
+        password: configService.get('PG_Pass'),
+        database: configService.get('PG_Name'),
+        models: [
+          User,
+          Student,
+          Course,
+          CourseQuestion,
+          ExamDetail,
+          CourseQuestionAnswer,
+          StudentFileUploads,
+          StudentContact,
+          StudentTraining,
+          StudentPayment,
+        ],
+        autoLoadModels: true,
+        synchronize: true,
+      }),
     }),
     EventEmitterModule.forRoot(),
     MailerModule.forRoot({
@@ -36,18 +68,22 @@ import { Sequelize } from 'sequelize-typescript';
         service: 'gmail',
         secure: false,
         auth: {
-          user: 'godsgiftuduak2@gmail.com',
-          pass: 'wjhrslegsmemuamz',
+          user: process.env.Mailer_User,
+          pass: process.env.Mailer_Pass,
         },
       },
     }),
     UsersModule,
     AuthModule,
     EmailModule,
+    StudentModule,
+    PaymentModule,
+    QuizModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
+    // UploadGateway,
     {
       provide: APP_FILTER,
       useClass: GlobalExceptionFilter,
@@ -59,10 +95,24 @@ import { Sequelize } from 'sequelize-typescript';
     },
     {
       provide: 'RedisToken',
-      useValue: redis.createClient({
-        host: '127.0.0.1',
-        port: '6379',
-      }),
+      useFactory: (configService: ConfigService) => {
+        return redis.createClient({
+          host: configService.get('Redis_Host'),
+          port: parseInt(configService.get('Redis_Port'), 10),
+        });
+      },
+      inject: [ConfigService],
+    },
+
+    {
+      provide: Flutterwave,
+      useFactory: (configService: ConfigService) => {
+        return new Flutterwave(
+          configService.get('Flutterwave_1'),
+          configService.get('Flutterwave_2'),
+        );
+      },
+      inject: [ConfigService],
     },
   ],
 })

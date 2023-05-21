@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  traefik:
+    image: traefik
+    command:
+      - '--providers.docker'
+      - '--providers.docker.exposedbydefault=false'
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.web-secure.address=:443'
+      - '--certificatesresolvers.myresolver.acme.httpchallenge=true'
+      - '--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web'
+      - '--certificatesresolvers.myresolver.acme.email=ezekieluduak2@gmail.com'
+      - '--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json'
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - './letsencrypt:/letsencrypt'
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+    networks:
+      - mynetwork
+
+  nest-api1:
+    build: .
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.nest-api1.rule=Host(`api1.example.com`)'
+      - 'traefik.http.routers.nest-api1.entrypoints=web-secure'
+      - 'traefik.http.routers.nest-api1.tls=true'
+    networks:
+      - mynetwork
+
+  nest-api2:
+    build: .
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.nest-api2.rule=Host(`api2.example.com`)'
+      - 'traefik.http.routers.nest-api2.entrypoints=web-secure'
+      - 'traefik.http.routers.nest-api2.tls=true'
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge

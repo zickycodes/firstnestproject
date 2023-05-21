@@ -1,4 +1,4 @@
-import { Module, CacheModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { AuthController } from './controllers/auth.controllers';
 import { AuthService } from './services/auth.service';
 import { UsersService } from 'src/users/service/users/users.service';
@@ -8,28 +8,23 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { User } from 'src/entities/User';
 import { JwtStrategy } from './strategy/JwtStrategy';
-import type { RedisClientOptions } from 'redis';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as redis from 'redis';
-import * as redisStore from 'cache-manager-redis-store';
-// import { TOTPVerifyOptions } from 'speakeasy';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
-    JwtModule.register({
-      secret: 'lovingmeisamistake',
-      signOptions: { expiresIn: '1h' },
-    }),
-    CacheModule.register<RedisClientOptions>({
-      store: redisStore,
-      // Store-specific configuration:
-      socket: {
-        host: '172.17.0.2',
-        port: '6379',
-      },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get('JWT_Secret'),
+        signOptions: { expiresIn: '1h' },
+      }),
     }),
     SequelizeModule.forFeature([User]),
+    ConfigModule, // Add ConfigModule import here
   ],
   controllers: [AuthController],
   providers: [
@@ -38,10 +33,13 @@ import * as redisStore from 'cache-manager-redis-store';
     JwtStrategy,
     {
       provide: 'RedisToken',
-      useValue: redis.createClient({
-        host: '127.0.0.1',
-        port: '6379',
-      }),
+      useFactory: (configService: ConfigService) => {
+        return redis.createClient({
+          host: configService.get('Redis_Host'),
+          port: parseInt(configService.get('Redis_Port'), 10),
+        });
+      },
+      inject: [ConfigService],
     },
   ],
   exports: [],

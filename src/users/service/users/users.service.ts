@@ -40,14 +40,31 @@ export class UsersService {
     });
   }
 
-  async findOneAndUpdate(id: number, userdetails: object): Promise<any> {
+  async findOneAndUpdate(
+    useridentifier: number | string,
+    userdetails: any,
+  ): Promise<any> {
     // console.log(id);
-    console.log(userdetails);
-    return await this.userModel.update(
-      {
-        ...userdetails,
-      },
-      { where: { id } },
-    );
+    // console.log(userdetails);
+    // console.log('useridentifier', useridentifier);
+    const password = userdetails.password ? userdetails.password : null;
+    let hashedPassword;
+    if (password) {
+      hashedPassword = await bcrypt.hash(password, 10);
+      return await this.userModel.update(
+        {
+          ...userdetails,
+          password: hashedPassword,
+        },
+        { where: { id: useridentifier } },
+      );
+    } else {
+      return await this.userModel.update(
+        {
+          ...userdetails,
+        },
+        { where: { id: useridentifier } },
+      );
+    }
   }
 }

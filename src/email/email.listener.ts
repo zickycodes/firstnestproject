@@ -10,8 +10,8 @@ export class EmailListener {
   @OnEvent('welcome-email')
   async handleSignupEvent(event: EmailEvent) {
     const { email } = event;
-    console.log(email);
-    console.log(event);
+    // console.log(email);
+    // console.log(event);
     await this.mailerService.sendMail({
       to: email,
       from: 'godsgiftuduak2@gmail.com',
@@ -25,7 +25,7 @@ export class EmailListener {
   @OnEvent('send-otp')
   async sendEmailOtp(event: EmailEvent) {
     const { email, token } = event;
-    console.log(email, token);
+    // console.log(email, token);
     // Use the mailer service to send the email here...
     await this.mailerService.sendMail({
       to: email,

@@ -12,7 +12,8 @@ async function bootstrap() {
       console.log('Connected to the database');
 
       await app.listen(process.env.PORT || 3000);
-      console.log('Application started');
+      -console.log('Application started');
+      await sequelize.sync();
     } catch (err) {
       console.log('Failed to connect to the database:', err);
       return;

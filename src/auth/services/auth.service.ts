@@ -1,4 +1,4 @@
-import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { UsersService } from 'src/users/service/users/users.service';
 import {
   HttpException,
@@ -14,7 +14,6 @@ import * as bcrypt from 'bcrypt';
 import { RefreshDto } from '../dtos/refreshdto';
 import { JwtService } from '@nestjs/jwt';
 import * as otpGenerator from 'otp-generator';
-import { Cache } from 'cache-manager';
 import * as redis from 'redis';
 
 // import { TOTPVerifyOptions } from 'speakeasy';
@@ -31,7 +30,6 @@ export class AuthService {
     private readonly eventEmitter: EventEmitter2,
     // replace with your own secret key
     private jwtService: JwtService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async signup(dto: SignUpDto) {
@@ -121,25 +119,11 @@ export class AuthService {
       specialChars: false,
     });
 
-    // const client = redis.createClient({
-    //   host: '127.0.0.1',
-    //   port: '6379',
-    // });
-
-    // client.on('error', (err) => {
-    //   console.log('Error ' + err);
-    // });
-
-    // client.on('ready', function () {
-    //   console.log('redis is running');
-    // });
-
-    // client.setex('token', 600, secret);
-    this.redisClient.setex('token', 600, 'secret');
+    this.redisClient.setex(email, 600, secret);
 
     console.log(secret, email);
     // await this.cacheManager.set('wiz', secret, 1000);
-    // this.eventEmitter.emit('send-otp', new EmailEvent(email, secret));
+    this.eventEmitter.emit('send-otp', new EmailEvent(email, secret));
 
     return {
       statusCode: 201,
@@ -147,40 +131,31 @@ export class AuthService {
     };
   }
 
-  // async resetPassword(email: string, token: any, password: string) {
-  //   const user = await this.userService.findOne({ email });
-  //   if (!user) {
-  //     throw new NotFoundException('User not found');
-  //   }
+  async resetPassword(email: string, token: any, password: string) {
+    const user = await this.userService.findOne({ email });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
 
-  //     throw new BadRequestException('Invalid or expired tokens');
-  //   }
-  //   await this.userService.findOneAndUpdate(user.id, { password });
-  //   return {
-  //     status: 200,
-  //     message: 'Updated succesfully',
-  //   };
-  // }
+    const tokenFromRedis = await new Promise<string>((resolve, reject) => {
+      this.redisClient.get(email, (err, data) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      });
+    });
 
-  // async resetPassword(email: string, token: any, password: string) {
-  //   try {
-  //     const user = await this.userService.findOne({ email });
-  //     if (!user) {
-  //       throw new NotFoundException('User not found');
-  //     }
+    if (tokenFromRedis !== token) {
+      throw new BadRequestException('Invalid token');
+    }
 
-  //     if (!this.verifyOtpToken(token)) {
-  //       throw new BadRequestException('Invalid or expired tokens');
-  //     }
-  //     await this.userService.findOneAndUpdate(user.id, { password });
-  //     return {
-  //       status: 200,
-  //       message: 'Updated succesfully',
-  //     };
-  //   } catch (error) {
-  //     const { response } = error;
-  //     console.log(response);
-  //     return response;
-  //   }
-  // }
+    await this.userService.findOneAndUpdate(user.id, { password });
+
+    return {
+      statusCode: 201,
+      message: 'Password successfully changed',
+    };
+  }
 }

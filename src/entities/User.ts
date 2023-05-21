@@ -1,5 +1,18 @@
-import { Table, Column, Model, HasOne } from 'sequelize-typescript';
-import { Student } from './Students';
+import {
+  Table,
+  Column,
+  Model,
+  HasOne,
+  BelongsToMany,
+} from 'sequelize-typescript';
+import { Student } from './Student.personal.info';
+import { StudentPayment } from './Student.payment';
+import { ExamDetail } from './ExamDetails';
+import { StudentFileUploads } from './students.paths.file';
+import { StudentTraining } from './students.training.info';
+import { StudentContact } from './Student.contact';
+import { CourseQuestion } from './CourseQuestion';
+import { CourseQuestionAnswer } from './CourseQuestionAnswer';
 
 @Table
 export class User extends Model {
@@ -19,7 +32,12 @@ export class User extends Model {
   })
   password: string;
 
-  @Column
+  @Column({
+    allowNull: false, // set the allowNull option to false to enforce not null constraint
+    validate: {
+      notNull: { msg: 'Password is required' }, // add a validation message
+    },
+  })
   role: string;
 
   @Column
@@ -27,4 +45,22 @@ export class User extends Model {
 
   @HasOne(() => Student)
   student: Student;
+
+  @HasOne(() => StudentPayment)
+  studentpayment: StudentPayment;
+
+  @HasOne(() => ExamDetail)
+  examdetail: ExamDetail;
+
+  @HasOne(() => StudentFileUploads)
+  studentfileuploads: StudentFileUploads;
+
+  @HasOne(() => StudentTraining)
+  studenntraining: StudentTraining;
+
+  @HasOne(() => StudentContact)
+  studentcontact: StudentContact;
+
+  @BelongsToMany(() => CourseQuestion, () => CourseQuestionAnswer)
+  courseQuestions: CourseQuestion[];
 }
